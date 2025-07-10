@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>🎮 Market Minds: Guess the price</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom, #fffef4, #ddfbe4);
+      text-align: center;
+      padding: 30px;
+      color: #333;
+    }
+
+    h1 {
+      font-size: 2.2em;
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+
+    .scoreboard {
+      font-size: 1.1em;
+      margin-bottom: 20px;
+      background: #c8e6c9;
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .product {
+      margin: 20px auto;
+      padding: 20px;
+      border: 2px solid #a5d6a7;
+      background: #ffffff;
+      width: 350px;
+      border-radius: 15px;
+      box-shadow: 3px 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .product-visual {
+      margin: 0 auto 15px auto;
+      width: 80px;
+      height: 100px;
+    }
+
+    .box { background: #ffc107; border: 4px solid #ffa000; }
+    .bottle { background: #64b5f6; border-radius: 10px; border: 4px solid #1976d2; }
+    .bag { background: #a1887f; border: 4px solid #6d4c41; }
+    .mug { background: #f48fb1; border-radius: 5px 5px 0 0; border: 4px solid #c2185b; }
+
+    input[type=number] {
+      padding: 10px;
+      margin-top: 15px;
+      width: 200px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 10px 25px;
+      margin-top: 10px;
+      background: #388e3c;
+      border: none;
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover { background: #2e7d32; }
+    #restartBtn {
+      display: none;
+      background: #ff7043;
+    }
+
+    #restartBtn:hover {
+      background: #e64a19;
+    }
+
+    .result, .formula, .hint {
+      font-size: 1.1em;
+      margin-top: 15px;
+    }
+
+    .emoji {
+      font-size: 2em;
+      margin-top: 10px;
+    }
+
+    .formula {
+      color: #666;
+      font-style: italic;
+    }
+
+    .hint {
+      color: #888;
+      font-size: 0.9em;
+      margin-top: 10px;
+    }
+
+    .counter {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎯 Price Guess Parade</h1>
+
+  <div class="scoreboard">
+    Score: <span id="score">0</span>
+    <br>
+    Guesses: <span id="round">0</span> / <span id="totalRounds">5</span>
+  </div>
+
+  <div class="product" id="productBox">
+    <div id="productVisual" class="product-visual"></div>
+    <p><strong>Item:</strong> <span id="productName"></span></p>
+    <p><strong>Size:</strong> <span id="sizeDisplay"></span></p>
+    <p><strong>Material:</strong> <span id="materialDisplay"></span></p>
+    <input type="number" id="priceGuess" placeholder="Your Price Guess ($)">
+    <br>
+    <button id="guessBtn" onclick="checkGuess()">Submit Guess</button>
+    <button id="restartBtn" onclick="restartGame()">🔁 Restart Game</button>
+    <div class="result" id="result"></div>
+    <div class="emoji" id="emoji"></div>
+    <div class="hint">💡 Hint: Price ≈ Size × 10 + Material Bonus</div>
+    <div class="formula" id="formulaReveal"></div>
+  </div>
+
+  <script>
+    const materials = {
+      "Plastic": 5,
+      "Wood": 15,
+      "Metal": 25,
+      "Glass": 20
+    };
+
+    const products = [
+      { name: "Box", className: "box" },
+      { name: "Bottle", className: "bottle" },
+      { name: "Bag", className: "bag" },
+      { name: "Mug", className: "mug" }
+    ];
+
+    let round = 0;
+    const totalRounds = 5;
+    let score = 0;
+    let currentProduct = {};
+
+    function getRandomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function generateProduct() {
+      const base = getRandomItem(products);
+      const size = Math.floor(Math.random() * 10) + 1;
+      const material = getRandomItem(Object.keys(materials));
+      return {
+        name: base.name,
+        className: base.className,
+        size,
+        material
+      };
+    }
+
+    function calculatePrice(product) {
+      return product.size * 10 + materials[product.material];
+    }
+
+    function renderProduct() {
+      currentProduct = generateProduct();
+      document.getElementById("productName").textContent = currentProduct.name;
+      document.getElementById("sizeDisplay").textContent = currentProduct.size;
+      document.getElementById("materialDisplay").textContent = currentProduct.material;
+
+      const visual = document.getElementById("productVisual");
+      visual.className = `product-visual ${currentProduct.className}`;
+
+      document.getElementById("priceGuess").value = "";
+      document.getElementById("result").textContent = "";
+      document.getElementById("emoji").textContent = "";
+      document.getElementById("formulaReveal").textContent = "";
+      document.getElementById("score").textContent = score;
+      document.getElementById("round").textContent = round;
+    }
+
+    function checkGuess() {
+      const userGuess = parseFloat(document.getElementById("priceGuess").value);
+      if (isNaN(userGuess)) {
+        alert("Please enter a valid number!");
+        return;
+      }
+
+      const actualPrice = calculatePrice(currentProduct);
+      const diff = Math.abs(actualPrice - userGuess);
+      const diffPercent = Math.min(100, Math.max(0, 100 - diff * 5));
+      score += Math.floor(diffPercent);
+
+      let emoji = diff < 3 ? "🎯" : diff < 8 ? "😊" : "😅";
+
+      document.getElementById("result").textContent =
+        `Actual: $${actualPrice} | Your Guess: $${userGuess} | +${Math.floor(diffPercent)} pts`;
+      document.getElementById("emoji").textContent = emoji;
+
+      round++;
+      document.getElementById("round").textContent = round;
+      document.getElementById("score").textContent = score;
+
+      if (round < totalRounds) {
+        setTimeout(renderProduct, 1500);
+      } else {
+        endGame();
+      }
+    }
+
+    function endGame() {
+      document.getElementById("formulaReveal").innerHTML =
+        `✨ Magic Formula:<br><strong>Price = Size × 10 + Material Bonus</strong><br><small>Plastic = +5, Wood = +15, Metal = +25, Glass = +20</small>`;
+      document.getElementById("result").textContent = `🎉 Game Over! Final Score: ${score}`;
+      document.getElementById("emoji").textContent = "🏆";
+      document.getElementById("guessBtn").disabled = true;
+      document.getElementById("priceGuess").disabled = true;
+      document.getElementById("restartBtn").style.display = "inline-block";
+    }
+
+    function restartGame() {
+      round = 0;
+      score = 0;
+      document.getElementById("guessBtn").disabled = false;
+      document.getElementById("priceGuess").disabled = false;
+      document.getElementById("restartBtn").style.display = "none";
+      renderProduct();
+    }
+
+    // Initialize
+    document.getElementById("totalRounds").textContent = totalRounds;
+    renderProduct();
+  </script>
+
+</body>
+</html>
